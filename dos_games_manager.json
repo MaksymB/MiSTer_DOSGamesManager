@@ -1,0 +1,19 @@
+{
+    "base_files_url": "",
+    "db_files": [],
+    "db_id": "dos_games_manager",
+    "db_url": "https://raw.githubusercontent.com/MaksymB/MiSTer_DOSGamesManager/main/dos_games_manager.json",
+    "default_options": {},
+    "files": {
+        "Scripts/dos_games_manager.sh": {
+            "hash": "0f1c21fa339424b63589c62667d57f95",
+            "size":     6951,
+            "url": "https://raw.githubusercontent.com/MaksymB/MiSTer_DOSGamesManager/main/dos_games_manager.sh"
+        }
+    },
+    "folders": {
+        "Scripts": {}
+    },
+    "timestamp": 1713107199,
+    "zips": {}
+}
