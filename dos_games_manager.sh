@@ -3,7 +3,7 @@
 # Exit immediately if any command fails
 set -e
 
-app_name="DOS Games Collection Manager"
+app_name="DOS Games Manager"
 dos_games_dir="/media/fat/_DOS Games/"
 scripts_dir="$(dirname "$(readlink -f "$0")")"
 
@@ -48,7 +48,14 @@ interactive_install() {
     done
 
     if [ ! -d "$games_collection_root" ]; then
-        echo "No '$subd_0mhz' dir found neither on USB drives nor on SD card."
+        local error_message="\
+Please copy '$subd_0mhz' folder to a USB stick or to the root of the SD card \
+and run this script again.
+"
+	dialog --backtitle "$app_name"\
+		--title "0Mhz DOS Collection not found"\
+		--msgbox "$error_message" 10 50
+	clear
         exit 1
     fi
 
