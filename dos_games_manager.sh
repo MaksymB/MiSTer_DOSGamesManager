@@ -8,7 +8,11 @@ dos_games_dir="/media/fat/_DOS Games/"
 scripts_dir="$(dirname "$(readlink -f "$0")")"
 
 escape_string() {
-    echo "$1" | sed 's/ /\\ /g' | sed 's/&/\\&/g'
+    echo "$1" |
+        sed 's/ /\\ /g' |
+        sed 's/&/\\&/g' |
+        sed 's/(/\\(/g' |
+        sed 's/)/\\)/g'
 }
 
 file_size() {
@@ -20,6 +24,52 @@ file_size() {
     else
         printf "%6d Bytes\n" "$file_size"
     fi
+}
+
+build_zip_archives_list() {
+    local target_dir="$1"
+    local prev_dir="$(pwd)"
+    local temp_file="$2"
+
+    echo -n > "$temp_file"
+
+    cd "$target_dir"
+
+    archives_count=$(ls -1q *.zip | wc -l)
+
+    local counter=0
+    for file in *.zip; do
+        echo "${file%.*}" >> "$temp_file"
+        echo "$(file_size "$file")" >> "$temp_file"
+
+	counter=$((counter+1))
+	echo "$((counter*100/archives_count))"
+    done
+
+    cd "$prev_dir"
+}
+
+create_temp_dir() {
+    local temp_dir="$1"
+
+    if [ -d "$temp_dir" ]; then
+        echo "Temporary directory from previous run found. Removing..."
+        rm -rf "$temp_dir"
+
+        if [ -d "$temp_dir" ]; then
+        echo "ERROR: failed to remove temporary directory."
+        exit 1
+        fi
+
+        echo
+    fi
+
+    mkdir "$temp_dir"
+}
+
+remove_temp_dir() {
+    local temp_dir="$1"
+    rm -rf "$temp_dir"
 }
 
 interactive_install() {
@@ -76,22 +126,30 @@ and run this script again.
         exit 1
     fi
 
-    local scripts_dir=$(dirname "$(readlink -f "$0")")
+    local temp_dir="$games_collection_root/.tmp/"
+
+    create_temp_dir "$temp_dir"
+
+    local temp_file="$temp_dir/cache.txt"
 
     # Find all game archives available for installation
-    local game_archives=()
+    build_zip_archives_list "$games_collection_root" "$temp_file" |
+        dialog --backtitle "$app_name"\
+               --gauge 'Searching for games...' 8 50 0
 
-    cd "$games_collection_root"
-    for file in *.zip; do
-        game_archives+=("${file%.*}")
-        s="$(file_size "$file")"
+    local zip_archives_list=()
+    while IFS= read -r line; do
+        zip_archives_list+=("$line")
+    done < "$temp_file"
 
-        game_archives+=("$s")
-    done
+    remove_temp_dir "$temp_dir"
 
-    cd "$scripts_dir"
-
-    local selected_game=$(dialog --backtitle "$app_name" --menu "Choose a game to install:" 15 70 10 "${game_archives[@]}" --stdout)
+    local selected_game=$(\
+             dialog --backtitle "$app_name"\
+                    --menu "Choose a game to install:"\
+                    15 70 10 "${zip_archives_list[@]}"\
+                    --stdout\
+	    )
 
     if [ -n "$selected_game" ]; then
         local ga="$(escape_string "$selected_game")"
@@ -114,21 +172,9 @@ install_game() {
     echo "Installing ${selected_game}..."
     echo
 
-    if [ -d "$temp_dir" ]; then
-        echo "Temporary directory from previous run found. Removing..."
-        rm -rf "$temp_dir"
-
-        if [ -d "$temp_dir" ]; then
-        echo "ERROR: failed to remove temporary directory."
-        exit 1
-        fi
-
-        echo
-    fi
+    create_temp_dir "$temp_dir"
 
     local archive_file_path="$games_collection_root/$selected_game.zip"
-
-    mkdir "$temp_dir"
 
     echo "Extracting $selected_game..."
     echo "  from: $archive_file_path"
@@ -147,7 +193,7 @@ install_game() {
     cp -ru "$temp_dir/_DOS Games" "/media/fat"
     echo
 
-    rm -rf "$temp_dir"
+    remove_temp_dir "$temp_dir"
 
     echo "Done!"
 }
@@ -167,8 +213,8 @@ interactive_uninstall() {
 
     # Find AO486 games dir by checking all USB drives one by one and the SD
     # card.
-    ao486_games_dir=""
-    subd_ao486="games/AO486"
+    local ao486_games_dir=""
+    local subd_ao486="games/AO486"
 
     for p in ${all_paths[@]}; do
         gs="$p/$subd_ao486"
@@ -184,7 +230,7 @@ interactive_uninstall() {
     fi
 
     # Find all installed games
-    installed_games=()
+    local installed_games=()
 
     cd "$dos_games_dir"
     for file in *.mgl; do
