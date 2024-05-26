@@ -29,9 +29,9 @@ file_size() {
 build_zip_archives_list() {
     local target_dir="$1"
     local prev_dir="$(pwd)"
-    local temp_file="$2"
+    local cache_file="$2"
 
-    echo -n > "$temp_file"
+    echo -n > "$cache_file"
 
     cd "$target_dir"
 
@@ -39,8 +39,8 @@ build_zip_archives_list() {
 
     local counter=0
     for file in *.zip; do
-        echo "${file%.*}" >> "$temp_file"
-        echo "$(file_size "$file")" >> "$temp_file"
+        echo "${file%.*}" >> "$cache_file"
+        echo "$(file_size "$file")" >> "$cache_file"
 
 	counter=$((counter+1))
 	echo "$((counter*100/archives_count))"
@@ -126,23 +126,19 @@ and run this script again.
         exit 1
     fi
 
-    local temp_dir="$games_collection_root/.tmp/"
+    local cache_file="$games_collection_root/cache.txt"
 
-    create_temp_dir "$temp_dir"
-
-    local temp_file="$temp_dir/cache.txt"
-
-    # Find all game archives available for installation
-    build_zip_archives_list "$games_collection_root" "$temp_file" |
-        dialog --backtitle "$app_name"\
-               --gauge 'Searching for games...' 8 50 0
+    if [ ! -f "$cache_file" ]; then
+        # Find all game archives available for installation
+        build_zip_archives_list "$games_collection_root" "$cache_file" |
+            dialog --backtitle "$app_name"\
+                   --gauge 'Searching for games...' 8 50 0
+    fi
 
     local zip_archives_list=()
     while IFS= read -r line; do
         zip_archives_list+=("$line")
-    done < "$temp_file"
-
-    remove_temp_dir "$temp_dir"
+    done < "$cache_file"
 
     local selected_game=$(\
              dialog --backtitle "$app_name"\
