@@ -6,14 +6,14 @@
     "default_options": {},
     "files": {
         "Scripts/dos_games_manager.sh": {
-            "hash": "ea0943576a78bee986769d607c114dc8",
-            "size":     8062,
+            "hash": "b3de5149d531a5b9aa18fa93a2361cc8",
+            "size":     8024,
             "url": "https://raw.githubusercontent.com/MaksymB/MiSTer_DOSGamesManager/main/dos_games_manager.sh"
         }
     },
     "folders": {
         "Scripts": {}
     },
-    "timestamp": 1715188385,
+    "timestamp": 1716753885,
     "zips": {}
 }
